@@ -4,22 +4,24 @@
 // ================= FETCH STAGE =================
 //
 
-void fetch() {
+void fetch()
+{
 
     //
     // Read instruction from instruction memory
     ////
-// Flush if branch taken
-//
+    // Flush if branch taken
+    //
 
-if(flushPipeline) {
+    if (flushPipeline)
+    {
 
-    IF_ID.valid = 0;
+        IF_ID.valid = 0;
 
-    flushPipeline = 0;
+        flushPipeline = 0;
 
-    printf("\nPipeline Flushed.\n");
-}
+        printf("\nPipeline Flushed.\n");
+    }
 
     uint16_t instruction = instructionMemory[PC];
 
@@ -54,13 +56,15 @@ if(flushPipeline) {
 // ================= DECODE STAGE =================
 //
 
-void decode() {
+void decode()
+{
 
     //
     // Check if buffer contains valid instruction
     //
 
-    if(IF_ID.valid == 0) {
+    if (IF_ID.valid == 0)
+    {
 
         printf("\nDecode Stage Empty.\n");
 
@@ -93,7 +97,8 @@ void decode() {
     // Sign extension for negative immediates
     //
 
-    if(immediate & 0x20) {
+    if (immediate & 0x20)
+    {
 
         immediate |= 0xC0;
     }
@@ -106,33 +111,36 @@ void decode() {
 
     int8_t r2Value = registers[r2];
     //
-// ================= FORWARDING =================
-//
-
-if(forwardingEnabled) {
-
-    //
-    // Forward to R1
+    // ================= FORWARDING =================
     //
 
-    if(r1 == forwardedRegister) {
+    if (forwardingEnabled)
+    {
 
-        r1Value = forwardedValue;
+        //
+        // Forward to R1
+        //
 
-        printf("\nFORWARDED VALUE TO R1\n");
+        if (r1 == forwardedRegister)
+        {
+
+            r1Value = forwardedValue;
+
+            printf("\nFORWARDED VALUE TO R1\n");
+        }
+
+        //
+        // Forward to R2
+        //
+
+        if (r2 == forwardedRegister)
+        {
+
+            r2Value = forwardedValue;
+
+            printf("\nFORWARDED VALUE TO R2\n");
+        }
     }
-
-    //
-    // Forward to R2
-    //
-
-    if(r2 == forwardedRegister) {
-
-        r2Value = forwardedValue;
-
-        printf("\nFORWARDED VALUE TO R2\n");
-    }
-}
 
     //
     // Fill ID -> EX buffer
@@ -179,7 +187,7 @@ if(forwardingEnabled) {
     //
     // Clear IF_ID buffer after decode
     //
-forwardingEnabled = 0;
+    forwardingEnabled = 0;
     IF_ID.valid = 0;
 }
 
@@ -187,13 +195,15 @@ forwardingEnabled = 0;
 // ================= EXECUTE STAGE =================
 //
 
-void execute() {
+void execute()
+{
 
     //
     // Check valid instruction
     //
 
-    if(ID_EX.valid == 0) {
+    if (ID_EX.valid == 0)
+    {
 
         printf("\nExecute Stage Empty.\n");
 
@@ -223,13 +233,13 @@ void execute() {
     //
 
     printf("\n========== EXECUTE STAGE ==========\n");
-    
 
     //
     // ================= ADD =================
     //
 
-    if(opcode == ADD) {
+    if (opcode == ADD)
+    {
 
         result = val1 + val2;
 
@@ -239,16 +249,32 @@ void execute() {
 
         updateNegativeFlag(result);
 
+        uint8_t u_val1 = (uint8_t)val1;
+        uint8_t u_val2 = (uint8_t)val2;
+        int carry_flag = 0;
+        if (((uint8_t)u_val1 + (uint8_t)u_val2) > 255)
+        {
+            carry_flag = 1;
+        }
+        int overflow_flag = 0;
+        if ((val1 > 0 && val2 > 0 && result < 0) || (val1 < 0 && val2 < 0 && result >= 0))
+        {
+            overflow_flag = 1;
+        }
+
         printf("ADD R%d R%d\n", r1, r2);
 
         printf("Result = %d\n", result);
+
+        printf("Carry = %d, Overflow = %d\n", carry_flag, overflow_flag);
     }
 
     //
     // ================= SUB =================
     //
 
-    else if(opcode == SUB) {
+    else if (opcode == SUB)
+    {
 
         result = val1 - val2;
 
@@ -258,8 +284,72 @@ void execute() {
 
         updateNegativeFlag(result);
 
+        uint8_t u_val1 = (uint8_t)val1;
+        uint8_t u_val2 = (uint8_t)val2;
+        int carry_flag = 0;
+        if (u_val1 < u_val2)
+        {
+            carry_flag = 1;
+        }
+        int overflow_flag = 0;
+        if ((val1 > 0 && val2 < 0 && result < 0) || (val1 < 0 && val2 > 0 && result >= 0))
+        {
+            overflow_flag = 1;
+        }
+
         printf("SUB R%d R%d\n", r1, r2);
 
+        printf("Result = %d\n", result);
+
+        printf("Carry = %d, Overflow = %d\n", carry_flag, overflow_flag);
+    }
+    //
+    // ================= SLC =================
+    //
+    else if (opcode == SLC)
+    {
+        int safe_shamt = imm % 8;
+        uint8_t u_val1 = (uint8_t)val1;
+
+        if (safe_shamt == 0)
+        {
+            result = val1;
+        }
+        else
+        {
+            result = (u_val1 << safe_shamt) | (u_val1 >> (8 - safe_shamt));
+        }
+
+        registers[r1] = result;
+        updateZeroFlag(result);
+        updateNegativeFlag(result);
+
+        printf("SLC R%d %d\n", r1, imm);
+        printf("Result = %d\n", result);
+    }
+
+    //
+    // ================= SRC =================
+    //
+    else if (opcode == SRC)
+    {
+        int safe_shamt = imm % 8;
+        uint8_t u_val1 = (uint8_t)val1;
+
+        if (safe_shamt == 0)
+        {
+            result = val1;
+        }
+        else
+        {
+            result = (u_val1 >> safe_shamt) | (u_val1 << (8 - safe_shamt));
+        }
+
+        registers[r1] = result;
+        updateZeroFlag(result);
+        updateNegativeFlag(result);
+
+        printf("SRC R%d %d\n", r1, imm);
         printf("Result = %d\n", result);
     }
 
@@ -267,7 +357,8 @@ void execute() {
     // ================= MUL =================
     //
 
-    else if(opcode == MUL) {
+    else if (opcode == MUL)
+    {
 
         result = val1 * val2;
 
@@ -286,7 +377,8 @@ void execute() {
     // ================= MOVI =================
     //
 
-    else if(opcode == MOVI) {
+    else if (opcode == MOVI)
+    {
 
         result = imm;
 
@@ -305,7 +397,8 @@ void execute() {
     // ================= ANDI =================
     //
 
-    else if(opcode == ANDI) {
+    else if (opcode == ANDI)
+    {
 
         result = val1 & imm;
 
@@ -324,7 +417,8 @@ void execute() {
     // ================= EOR =================
     //
 
-    else if(opcode == EOR) {
+    else if (opcode == EOR)
+    {
 
         result = val1 ^ val2;
 
@@ -340,58 +434,62 @@ void execute() {
     }
 
     //
-// ================= BEQZ =================
-//
-
-else if(opcode == BEQZ) {
-
-    printf("BEQZ R%d %d\n", r1, imm);
-
-    //
-    // Branch if register equals zero
+    // ================= BEQZ =================
     //
 
-    if(val1 == 0) {
+    else if (opcode == BEQZ)
+    {
+
+        printf("BEQZ R%d %d\n", r1, imm);
 
         //
-        // Calculate branch target
+        // Branch if register equals zero
         //
 
-        branchTarget = ID_EX.pc + 1 + imm;
+        if (val1 == 0)
+        {
 
-        //
-        // Redirect PC
-        //
+            //
+            // Calculate branch target
+            //
 
-        PC = branchTarget;
+            branchTarget = ID_EX.pc + 1 + imm;
 
-        //
-        // Flush pipeline
-        //
+            //
+            // Redirect PC
+            //
 
-        flushPipeline = 1;
+            PC = branchTarget;
 
-        //
-        // Clear wrong instructions
-        //
+            //
+            // Flush pipeline
+            //
 
-        IF_ID.valid = 0;
+            flushPipeline = 1;
 
-        printf("BRANCH TAKEN\n");
+            //
+            // Clear wrong instructions
+            //
 
-        printf("New PC = %u\n", PC);
+            IF_ID.valid = 0;
+
+            printf("BRANCH TAKEN\n");
+
+            printf("New PC = %u\n", PC);
+        }
+
+        else
+        {
+
+            printf("BRANCH NOT TAKEN\n");
+        }
     }
+    //
+    // ================= BR =================
+    //
 
-    else {
-
-        printf("BRANCH NOT TAKEN\n");
-    }
-}
-//
-// ================= BR =================
-//
-
-    else if(opcode == BR) {
+    else if (opcode == BR)
+    {
 
         printf("BR R%d R%d\n", r1, r2);
 
@@ -432,16 +530,20 @@ else if(opcode == BEQZ) {
     // ================= LDR =================
     //
 
-    else if(opcode == LDR) {
+    else if (opcode == LDR)
+    {
 
         printf("LDR R%d %d\n", r1, imm);
 
         uint16_t address = (uint16_t)imm;
 
-        if(address >= DATA_MEMORY_SIZE) {
+        if (address >= DATA_MEMORY_SIZE)
+        {
             printf("ERROR: Address %u out of bounds\n", address);
             result = 0;
-        } else {
+        }
+        else
+        {
             result = dataMemory[address];
             printf("Loaded value %d from address %u\n", result, address);
         }
@@ -456,15 +558,19 @@ else if(opcode == BEQZ) {
     // ================= STR =================
     //
 
-    else if(opcode == STR) {
+    else if (opcode == STR)
+    {
 
         printf("STR R%d %d\n", r1, imm);
 
         uint16_t address = (uint16_t)imm;
 
-        if(address >= DATA_MEMORY_SIZE) {
+        if (address >= DATA_MEMORY_SIZE)
+        {
             printf("ERROR: Address %u out of bounds\n", address);
-        } else {
+        }
+        else
+        {
             int8_t oldValue = dataMemory[address];
             dataMemory[address] = registers[r1];
             printf("Stored value %d to address %u\n", registers[r1], address);
@@ -487,14 +593,14 @@ else if(opcode == BEQZ) {
     //
     // Clear buffer
     //
-//
-// Enable forwarding
-//
+    //
+    // Enable forwarding
+    //
 
-forwardingEnabled = 1;
+    forwardingEnabled = 1;
 
-forwardedRegister = r1;
+    forwardedRegister = r1;
 
-forwardedValue = registers[r1];
+    forwardedValue = registers[r1];
     ID_EX.valid = 0;
 }
