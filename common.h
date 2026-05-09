@@ -35,26 +35,16 @@
 // ================= PROCESSOR MEMORY =================
 //
 
-// Instruction Memory
-// 1024 words, each word = 16 bits
 extern uint16_t instructionMemory[INSTRUCTION_MEMORY_SIZE];
-
-// Data Memory
-// 2048 bytes
-extern int8_t dataMemory[DATA_MEMORY_SIZE];
-
-// Register File
-// 64 registers, each = 8 bits
-extern int8_t registers[NUM_REGISTERS];
+extern int8_t   dataMemory[DATA_MEMORY_SIZE];
+extern int8_t   registers[NUM_REGISTERS];
 
 //
 // ================= SPECIAL REGISTERS =================
 //
 
-// Program Counter
 extern uint16_t PC;
 
-// Status Register
 typedef struct {
     uint8_t C; // Carry
     uint8_t V; // Overflow
@@ -69,41 +59,39 @@ extern SREG_t SREG;
 // ================= PIPELINE BUFFERS =================
 //
 
-// IF -> ID Buffer
 typedef struct {
     uint16_t instruction;
     uint16_t pc;
-
-    uint8_t valid;
+    uint8_t  valid;
 } IF_ID_Buffer;
 
 extern IF_ID_Buffer IF_ID;
 
-//
-// ID -> EX Buffer
-//
-
 typedef struct {
-
     uint16_t rawInstruction;
-
-    uint8_t opcode;
-
-    uint8_t r1;
-    uint8_t r2;
-
-    int8_t immediate;
-
-    int8_t r1Value;
-    int8_t r2Value;
-
+    uint8_t  opcode;
+    uint8_t  r1;
+    uint8_t  r2;
+    int8_t   immediate;
+    int8_t   r1Value;
+    int8_t   r2Value;
     uint16_t pc;
-
-    uint8_t valid;
-
+    uint8_t  valid;
 } ID_EX_Buffer;
 
 extern ID_EX_Buffer ID_EX;
+
+//
+// ================= PIPELINE STATE =================
+//
+
+extern int      instructionCount;
+extern uint8_t  flushPipeline;
+extern uint16_t branchTarget;
+
+extern uint8_t  forwardingEnabled;
+extern uint8_t  forwardedRegister;
+extern int8_t   forwardedValue;
 
 //
 // ================= FUNCTION DECLARATIONS =================
@@ -112,20 +100,18 @@ extern ID_EX_Buffer ID_EX;
 void printRegisters();
 void printDataMemory();
 void printInstructionMemory();
-
 void printRegisterChange(int reg, int8_t oldValue, int8_t newValue);
 void printMemoryChange(int address, int8_t oldValue, int8_t newValue);
-
 void printSREG();
+
+// Basic flag updates
 void updateZeroFlag(int8_t result);
 void updateNegativeFlag(int8_t result);
-extern int instructionCount;
-extern uint8_t flushPipeline;
-extern uint16_t branchTarget;
 
-extern uint8_t forwardingEnabled;
+// Part 3: SREG arithmetic accuracy helpers
+void updateCarryFlag(int8_t val1, int8_t val2);
+void updateOverflowFlagADD(int8_t val1, int8_t val2, int8_t result);
+void updateOverflowFlagSUB(int8_t val1, int8_t val2, int8_t result);
+void updateSignFlag();
 
-extern uint8_t forwardedRegister;
-
-extern int8_t forwardedValue;
 #endif
