@@ -41,6 +41,10 @@ int main() {
         printf("\n\n");
         printf("=====================================\n");
         printf("CLOCK CYCLE %d\n", cycle);
+        if(!IF_ID.valid && !ID_EX.valid && PC < instructionCount) {
+
+            printf("Pipeline Bubble Present\n");
+        }
         printf("=====================================\n");
 
         //

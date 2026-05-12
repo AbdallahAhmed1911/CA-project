@@ -4,32 +4,61 @@
 // ================= FETCH STAGE =================
 //
 
-void fetch()
-{
+void fetch() {
+
     //
-    // Flush if branch taken
+    // Do not fetch beyond program
     //
 
-    if (flushPipeline)
-    {
-        IF_ID.valid   = 0;
-        flushPipeline = 0;
-        printf("\nPipeline Flushed.\n");
+    if(PC >= instructionCount) {
+
+        return;
     }
+
+    //
+    // Flush wrong-path instruction
+    //
+
+    if(flushPipeline) {
+
+        IF_ID.valid = 0;
+
+        flushPipeline = 0;
+
+        printf("\nPipeline Flushed.\n");
+
+        return;
+    }
+
+    //
+    // Fetch instruction
+    //
 
     uint16_t instruction = instructionMemory[PC];
 
     //
-    // Fill IF -> ID buffer
+    // Fill IF/ID buffer
     //
 
     IF_ID.instruction = instruction;
-    IF_ID.pc          = PC;
-    IF_ID.valid       = 1;
+
+    IF_ID.pc = PC;
+
+    IF_ID.valid = 1;
+
+    //
+    // Print stage
+    //
 
     printf("\n========== FETCH STAGE ==========\n");
+
     printf("Fetched Instruction = 0x%04X\n", instruction);
+
     printf("Fetched From Address = %u\n", PC);
+
+    //
+    // Increment PC
+    //
 
     PC++;
 }
@@ -40,6 +69,7 @@ void fetch()
 
 void decode()
 {
+    ID_EX.valid = 0;
     if (IF_ID.valid == 0)
     {
         printf("\nDecode Stage Empty.\n");
@@ -117,6 +147,7 @@ void decode()
 
 void execute()
 {
+    forwardingEnabled = 0;
     if (ID_EX.valid == 0)
     {
         printf("\nExecute Stage Empty.\n");
@@ -324,7 +355,6 @@ void execute()
             branchTarget  = ID_EX.pc + 1 + imm;
             PC            = branchTarget;
             flushPipeline = 1;
-            IF_ID.valid   = 0;
 
             printf("BRANCH TAKEN\n");
             printf("New PC = %u\n", PC);
@@ -420,9 +450,27 @@ void execute()
     // Enable forwarding for next decode
     //
 
-    forwardingEnabled  = 1;
-    forwardedRegister  = r1;
-    forwardedValue     = registers[r1];
+    //
+// Enable forwarding only for instructions
+// that write to registers
+//
 
+if(
+
+    opcode == ADD  ||
+    opcode == SUB  ||
+    opcode == MUL  ||
+    opcode == MOVI ||
+    opcode == ANDI ||
+    opcode == EOR
+
+) {
+
+    forwardingEnabled = 1;
+
+    forwardedRegister = r1;
+
+    forwardedValue = registers[r1];
+}
     ID_EX.valid = 0;
 }
