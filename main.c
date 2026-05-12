@@ -1,3 +1,4 @@
+//gcc main.c memory.c parser.c pipeline.c -o processor.exe
 #include "common.h"
 #include "parser.h"
 #include "pipeline.h"
@@ -8,14 +9,16 @@ int main() {
     // Load assembly program
     //
 
-    loadProgram("program.txt");
+    loadProgram("test2.txt");
 
-    //
-    // Example initial values
-    //
+    for (int i = 0; i < NUM_REGISTERS; i++)
+        registers[i] = 0;
 
-    registers[1] = 10;
-    registers[2] = 20;
+    for (int i = 0; i < DATA_MEMORY_SIZE; i++)
+        dataMemory[i] = 0;
+
+    PC = 0;
+    instructionCount = 0;
 
     //
     // Clock cycle counter
@@ -53,7 +56,6 @@ int main() {
         // Then Decode
         // Then Fetch
         //
-
         execute();
 
         decode();

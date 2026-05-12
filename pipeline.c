@@ -1,10 +1,12 @@
 #include "pipeline.h"
 
+uint8_t killDecode = 0;
+uint8_t killEX = 0;
 //
 // ================= FETCH STAGE =================
 //
 
-void fetch() {
+/*void fetch() {
 
     //
     // Do not fetch beyond program
@@ -20,13 +22,10 @@ void fetch() {
     //
 
     if(flushPipeline) {
-
         IF_ID.valid = 0;
-
+        //ID_EX.valid = 0;
         flushPipeline = 0;
-
         printf("\nPipeline Flushed.\n");
-
         return;
     }
 
@@ -61,15 +60,47 @@ void fetch() {
     //
 
     PC++;
-}
+}*/
+void fetch()
+{
+    if (PC >= instructionCount)
+        return;
 
+    // FLUSH ONLY HERE (correct place)
+    if (flushPipeline)
+    {
+        IF_ID.valid = 0;
+        flushPipeline = 0;
+        printf("\nPipeline Flushed.\n");
+        return;
+    }
+
+    uint16_t instruction = instructionMemory[PC];
+
+    IF_ID.instruction = instruction;
+    IF_ID.pc = PC;
+    IF_ID.valid = 1;
+
+    printf("\n========== FETCH STAGE ==========\n");
+    printf("Fetched Instruction = 0x%04X\n", instruction);
+    printf("Fetched From Address = %u\n", PC);
+
+    PC++;
+}
 //
 // ================= DECODE STAGE =================
 //
 
-void decode()
+/*void decode()
 {
-    ID_EX.valid = 0;
+    if (flushPipeline || killDecode)
+    {
+        IF_ID.valid = 0;
+        ID_EX.valid = 0;
+
+        killDecode = 0;
+        return;
+    }
     if (IF_ID.valid == 0)
     {
         printf("\nDecode Stage Empty.\n");
@@ -139,15 +170,82 @@ void decode()
 
     forwardingEnabled = 0;
     IF_ID.valid       = 0;
-}
+}*/
+void decode()
+{
+    // HARD STOP on flush (correct)
+    if (flushPipeline || killDecode)
+    {
+        IF_ID.valid = 0;
+        killDecode = 0;
+        return;
+    }
 
+    if (IF_ID.valid == 0)
+    {
+        printf("\nDecode Stage Empty.\n");
+        return;
+    }
+
+    uint16_t instruction = IF_ID.instruction;
+
+    uint8_t opcode    = (instruction >> 12) & 0xF;
+    uint8_t r1        = (instruction >> 6) & 0x3F;
+    uint8_t r2        = instruction & 0x3F;
+    int8_t  immediate  = instruction & 0x3F;
+
+    if (immediate & 0x20)
+        immediate |= 0xC0;
+
+    int8_t r1Value = registers[r1];
+    int8_t r2Value = registers[r2];
+
+    if (forwardingEnabled)
+    {
+        if (r1 == forwardedRegister)
+            r1Value = forwardedValue;
+
+        if (r2 == forwardedRegister)
+            r2Value = forwardedValue;
+    }
+
+    // BUILD PIPELINE REGISTER ONLY IF NOT FLUSHED
+    ID_EX.rawInstruction = instruction;
+    ID_EX.opcode         = opcode;
+    ID_EX.r1             = r1;
+    ID_EX.r2             = r2;
+    ID_EX.immediate      = immediate;
+    ID_EX.r1Value        = r1Value;
+    ID_EX.r2Value        = r2Value;
+    ID_EX.pc             = IF_ID.pc;
+    ID_EX.valid          = 1;
+
+    printf("\n========== DECODE STAGE ==========\n");
+    printf("Instruction = 0x%04X\n", instruction);
+    printf("Opcode = %u\n", opcode);
+    printf("R1 = %u\n", r1);
+    printf("R2 = %u\n", r2);
+    printf("Immediate = %d\n", immediate);
+    printf("R1 Value = %d\n", r1Value);
+    printf("R2 Value = %d\n", r2Value);
+
+    forwardingEnabled = 0;
+    IF_ID.valid = 0;
+}
 //
 // ================= EXECUTE STAGE =================
 //
 
 void execute()
 {
-    forwardingEnabled = 0;
+    // HARD KILL FIRST (VERY IMPORTANT)
+    if (flushPipeline || killEX)
+    {
+        ID_EX.valid = 0;
+        killEX = 0;
+        return;
+    }
+
     if (ID_EX.valid == 0)
     {
         printf("\nExecute Stage Empty.\n");
@@ -157,10 +255,10 @@ void execute()
     uint8_t opcode = ID_EX.opcode;
     uint8_t r1     = ID_EX.r1;
     uint8_t r2     = ID_EX.r2;
-    int8_t  imm    = ID_EX.immediate;
-    int8_t  val1   = ID_EX.r1Value;
-    int8_t  val2   = ID_EX.r2Value;
-    int8_t  result = 0;
+    int8_t imm     = ID_EX.immediate;
+    int8_t val1    = ID_EX.r1Value;
+    int8_t val2    = ID_EX.r2Value;
+    int8_t result  = 0;
 
     printf("\n========== EXECUTE STAGE ==========\n");
 
@@ -346,25 +444,27 @@ void execute()
     // No flag updates
     //
 
-    else if (opcode == BEQZ)
+    if (opcode == BEQZ)
     {
         printf("BEQZ R%d %d\n", r1, imm);
 
         if (val1 == 0)
         {
-            branchTarget  = ID_EX.pc + 1 + imm;
-            PC            = branchTarget;
+            PC = ID_EX.pc + 1 + imm;
             flushPipeline = 1;
+            killDecode = 1;
+            killEX = 1;
 
             printf("BRANCH TAKEN\n");
             printf("New PC = %u\n", PC);
+
+            return;
         }
         else
         {
             printf("BRANCH NOT TAKEN\n");
         }
     }
-
     //
     // ================= BR =================
     // No flag updates
@@ -380,6 +480,7 @@ void execute()
         PC               = branchTarget;
         flushPipeline    = 1;
         IF_ID.valid      = 0;
+        ID_EX.valid      = 0;
 
         printf("JUMP TAKEN\n");
         printf("New PC = %u\n", PC);
