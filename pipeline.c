@@ -563,7 +563,10 @@ if(
     opcode == MUL  ||
     opcode == MOVI ||
     opcode == ANDI ||
-    opcode == EOR
+    opcode == EOR  ||
+    opcode == SLC  ||
+    opcode == SRC  ||
+    opcode == LDR
 
 ) {
 

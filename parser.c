@@ -49,7 +49,7 @@ void loadProgram(const char* filename) {
 
     int instructionIndex = 0;
 
-    while(fgets(line, sizeof(line), file)) {
+    /*while(fgets(line, sizeof(line), file)) {
 
         char mnemonic[10];
         char op1[10];
@@ -110,7 +110,70 @@ void loadProgram(const char* filename) {
 
         instructionIndex++;
         instructionCount++;
+    }*/
+   while(fgets(line, sizeof(line), file)) {
+
+    // Skip empty lines
+    if(line[0] == '\n' || line[0] == '\0')
+        continue;
+
+    char mnemonic[10] = {0};
+    char op1[10] = {0};
+    char op2[10] = {0};
+
+    int tokens = sscanf(line, "%9s %9s %9s",
+                        mnemonic,
+                        op1,
+                        op2);
+
+    // Ignore invalid lines
+    if(tokens < 1)
+        continue;
+
+    int opcode = getOpcode(mnemonic);
+
+    if(opcode == -1) {
+        printf("Invalid opcode: %s\n", mnemonic);
+        continue;
     }
+
+    uint16_t instruction = 0;
+
+    // R-FORMAT
+    if(opcode == ADD ||
+       opcode == SUB ||
+       opcode == MUL ||
+       opcode == EOR ||
+       opcode == BR) {
+
+        int r1 = parseRegister(op1);
+        int r2 = parseRegister(op2);
+
+        instruction |= (opcode << 12);
+        instruction |= (r1 << 6);
+        instruction |= r2;
+    }
+
+    // I-FORMAT
+    else {
+
+        int r1 = parseRegister(op1);
+        int immediate = atoi(op2);
+
+        instruction |= (opcode << 12);
+        instruction |= (r1 << 6);
+        instruction |= (immediate & 0x3F);
+    }
+
+    instructionMemory[instructionIndex] = instruction;
+
+    printf("Loaded Instruction %d = 0x%04X\n",
+           instructionIndex,
+           instruction);
+
+    instructionIndex++;
+    instructionCount++;
+}
 
     fclose(file);
 }
