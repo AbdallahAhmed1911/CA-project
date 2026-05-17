@@ -1,4 +1,6 @@
 //gcc main.c memory.c parser.c pipeline.c -o processor.exe
+//processor.exe
+//python simulator_gui.py
 #include "common.h"
 #include "parser.h"
 #include "pipeline.h"
