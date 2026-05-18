@@ -1,9 +1,7 @@
 #include "parser.h"
 
-//
-// Convert mnemonic to opcode
-//
 
+// convert mnemonic to opcode
 int getOpcode(char* mnemonic) {
 
     if(strcmp(mnemonic, "ADD") == 0) return ADD;
@@ -22,19 +20,11 @@ int getOpcode(char* mnemonic) {
     return -1;
 }
 
-//
-// Extract register number
-// Example: "R5" -> 5
-//
-
+// extract register number from string like "R1"
 int parseRegister(char* reg) {
 
     return atoi(reg + 1);
 }
-
-//
-// Main loader
-//
 
 void loadProgram(const char* filename) {
 
@@ -48,69 +38,6 @@ void loadProgram(const char* filename) {
     char line[100];
 
     int instructionIndex = 0;
-
-    /*while(fgets(line, sizeof(line), file)) {
-
-        char mnemonic[10];
-        char op1[10];
-        char op2[10];
-
-        sscanf(line, "%s %s %s",
-               mnemonic,
-               op1,
-               op2);
-
-        int opcode = getOpcode(mnemonic);
-
-        uint16_t instruction = 0;
-
-        //
-        // R-FORMAT
-        //
-
-        if(opcode == ADD ||
-           opcode == SUB ||
-           opcode == MUL ||
-           opcode == EOR ||
-           opcode == BR) {
-
-            int r1 = parseRegister(op1);
-            int r2 = parseRegister(op2);
-
-            instruction |= (opcode << 12);
-            instruction |= (r1 << 6);
-            instruction |= r2;
-        }
-
-        //
-        // I-FORMAT
-        //
-
-        else {
-
-            int r1 = parseRegister(op1);
-
-            int immediate = atoi(op2);
-
-            instruction |= (opcode << 12);
-            instruction |= (r1 << 6);
-
-            //
-            // Keep only lower 6 bits
-            //
-
-            instruction |= (immediate & 0x3F);
-        }
-
-        instructionMemory[instructionIndex] = instruction;
-
-        printf("Loaded Instruction %d = 0x%04X\n",
-               instructionIndex,
-               instruction);
-
-        instructionIndex++;
-        instructionCount++;
-    }*/
    while(fgets(line, sizeof(line), file)) {
 
     // Skip empty lines

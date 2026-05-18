@@ -2,71 +2,15 @@
 
 uint8_t killDecode = 0;
 uint8_t killEX = 0;
-//
+
+
 // ================= FETCH STAGE =================
-//
-
-/*void fetch() {
-
-    //
-    // Do not fetch beyond program
-    //
-
-    if(PC >= instructionCount) {
-
-        return;
-    }
-
-    //
-    // Flush wrong-path instruction
-    //
-
-    if(flushPipeline) {
-        IF_ID.valid = 0;
-        //ID_EX.valid = 0;
-        flushPipeline = 0;
-        printf("\nPipeline Flushed.\n");
-        return;
-    }
-
-    //
-    // Fetch instruction
-    //
-
-    uint16_t instruction = instructionMemory[PC];
-
-    //
-    // Fill IF/ID buffer
-    //
-
-    IF_ID.instruction = instruction;
-
-    IF_ID.pc = PC;
-
-    IF_ID.valid = 1;
-
-    //
-    // Print stage
-    //
-
-    printf("\n========== FETCH STAGE ==========\n");
-
-    printf("Fetched Instruction = 0x%04X\n", instruction);
-
-    printf("Fetched From Address = %u\n", PC);
-
-    //
-    // Increment PC
-    //
-
-    PC++;
-}*/
 void fetch()
 {
     if (PC >= instructionCount)
         return;
 
-    // FLUSH ONLY HERE (correct place)
+    // FLUSH ONLY HERe
     if (flushPipeline)
     {
         IF_ID.valid = 0;
@@ -87,93 +31,11 @@ void fetch()
 
     PC++;
 }
-//
+
 // ================= DECODE STAGE =================
-//
-
-/*void decode()
-{
-    if (flushPipeline || killDecode)
-    {
-        IF_ID.valid = 0;
-        ID_EX.valid = 0;
-
-        killDecode = 0;
-        return;
-    }
-    if (IF_ID.valid == 0)
-    {
-        printf("\nDecode Stage Empty.\n");
-        return;
-    }
-
-    uint16_t instruction = IF_ID.instruction;
-
-    uint8_t opcode    = (instruction >> 12) & 0xF;
-    uint8_t r1        = (instruction >>  6) & 0x3F;
-    uint8_t r2        =  instruction        & 0x3F;
-    int8_t  immediate =  instruction        & 0x3F;
-
-    //
-    // Sign-extend 6-bit immediate
-    //
-
-    if (immediate & 0x20)
-    {
-        immediate |= 0xC0;
-    }
-
-    int8_t r1Value = registers[r1];
-    int8_t r2Value = registers[r2];
-
-    //
-    // ================= FORWARDING =================
-    //
-
-    if (forwardingEnabled)
-    {
-        if (r1 == forwardedRegister)
-        {
-            r1Value = forwardedValue;
-            printf("\nFORWARDED VALUE TO R1\n");
-        }
-
-        if (r2 == forwardedRegister)
-        {
-            r2Value = forwardedValue;
-            printf("\nFORWARDED VALUE TO R2\n");
-        }
-    }
-
-    //
-    // Fill ID -> EX buffer
-    //
-
-    ID_EX.rawInstruction = instruction;
-    ID_EX.opcode         = opcode;
-    ID_EX.r1             = r1;
-    ID_EX.r2             = r2;
-    ID_EX.immediate      = immediate;
-    ID_EX.r1Value        = r1Value;
-    ID_EX.r2Value        = r2Value;
-    ID_EX.pc             = IF_ID.pc;
-    ID_EX.valid          = 1;
-
-    printf("\n========== DECODE STAGE ==========\n");
-    printf("Instruction = 0x%04X\n", instruction);
-    printf("Opcode = %u\n",  opcode);
-    printf("R1 = %u\n",      r1);
-    printf("R2 = %u\n",      r2);
-    printf("Immediate = %d\n", immediate);
-    printf("R1 Value = %d\n", r1Value);
-    printf("R2 Value = %d\n", r2Value);
-
-    forwardingEnabled = 0;
-    IF_ID.valid       = 0;
-}*/
 void decode()
 {
-    // HARD STOP on flush (correct)
+    // HARD STOP on flush 
     if (flushPipeline || killDecode)
     {
         IF_ID.valid = 0;
@@ -232,10 +94,8 @@ void decode()
     forwardingEnabled = 0;
     IF_ID.valid = 0;
 }
-//
-// ================= EXECUTE STAGE =================
-//
 
+// ================= EXECUTE STAGE =================
 void execute()
 {
     // HARD KILL FIRST (VERY IMPORTANT)
@@ -262,11 +122,8 @@ void execute()
 
     printf("\n========== EXECUTE STAGE ==========\n");
 
-    //
     // ================= ADD =================
     // Flags updated: C, V, N, S, Z
-    //
-
     if (opcode == ADD)
     {
         result        = val1 + val2;
@@ -275,7 +132,7 @@ void execute()
         updateZeroFlag(result);
         updateNegativeFlag(result);
 
-        // FIX: use helpers that actually write to SREG.C and SREG.V
+        
         updateCarryFlag(val1, val2);
         updateOverflowFlagADD(val1, val2, result);
 
@@ -286,11 +143,8 @@ void execute()
         printf("Result = %d\n", result);
     }
 
-    //
     // ================= SUB =================
     // Flags updated: V, N, S, Z
-    //
-
     else if (opcode == SUB)
     {
         result        = val1 - val2;
@@ -299,7 +153,6 @@ void execute()
         updateZeroFlag(result);
         updateNegativeFlag(result);
 
-        // FIX: use helper that actually writes to SREG.V
         updateOverflowFlagSUB(val1, val2, result);
 
         // FIX: S = N XOR V
@@ -309,11 +162,8 @@ void execute()
         printf("Result = %d\n", result);
     }
 
-    //
     // ================= MUL =================
     // Flags updated: N, S, Z
-    //
-
     else if (opcode == MUL)
     {
         result        = val1 * val2;
@@ -327,11 +177,8 @@ void execute()
         printf("Result = %d\n", result);
     }
 
-    //
     // ================= MOVI =================
     // Flags updated: N, S, Z
-    //
-
     else if (opcode == MOVI)
     {
         result        = imm;
@@ -345,11 +192,8 @@ void execute()
         printf("Result = %d\n", result);
     }
 
-    //
     // ================= ANDI =================
     // Flags updated: N, S, Z
-    //
-
     else if (opcode == ANDI)
     {
         result        = val1 & imm;
@@ -363,11 +207,8 @@ void execute()
         printf("Result = %d\n", result);
     }
 
-    //
     // ================= EOR =================
     // Flags updated: N, S, Z
-    //
-
     else if (opcode == EOR)
     {
         result        = val1 ^ val2;
@@ -381,11 +222,8 @@ void execute()
         printf("Result = %d\n", result);
     }
 
-    //
     // ================= SLC =================
     // Flags updated: N, S, Z
-    //
-
     else if (opcode == SLC)
     {
         int     safe_shamt = imm % 8;
@@ -410,11 +248,8 @@ void execute()
         printf("Result = %d\n", result);
     }
 
-    //
     // ================= SRC =================
     // Flags updated: N, S, Z
-    //
-
     else if (opcode == SRC)
     {
         int     safe_shamt = imm % 8;
@@ -439,11 +274,8 @@ void execute()
         printf("Result = %d\n", result);
     }
 
-    //
     // ================= BEQZ =================
     // No flag updates
-    //
-
     if (opcode == BEQZ)
     {
         printf("BEQZ R%d %d\n", r1, imm);
@@ -465,11 +297,9 @@ void execute()
             printf("BRANCH NOT TAKEN\n");
         }
     }
-    //
+
     // ================= BR =================
     // No flag updates
-    //
-
     else if (opcode == BR)
     {
         printf("BR R%d R%d\n", r1, r2);
@@ -486,11 +316,8 @@ void execute()
         printf("New PC = %u\n", PC);
     }
 
-    //
     // ================= LDR =================
     // Flags updated: N, S, Z
-    //
-
     else if (opcode == LDR)
     {
         printf("LDR R%d %d\n", r1, imm);
@@ -515,11 +342,8 @@ void execute()
         updateSignFlag();
     }
 
-    //
     // ================= STR =================
     // No flag updates
-    //
-
     else if (opcode == STR)
     {
         printf("STR R%d %d\n", r1, imm);
@@ -539,22 +363,12 @@ void execute()
         }
     }
 
-    //
     // Print updated register and flags
-    //
-
     printf("Updated R%d = %d\n", r1, registers[r1]);
 
     printSREG();
-
-    //
-    // Enable forwarding for next decode
-    //
-
-    //
 // Enable forwarding only for instructions
 // that write to registers
-//
 
 if(
 

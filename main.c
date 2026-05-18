@@ -6,7 +6,7 @@
 #include "pipeline.h"
 int main() {
 
-    // Reset everything FIRST
+    // reset everything FIRST
     for (int i = 0; i < NUM_REGISTERS; i++)
         registers[i] = 0;
 
@@ -27,9 +27,9 @@ int main() {
     flushPipeline     = 0;
     forwardingEnabled = 0;
 
-    // THEN load (this sets instructionCount)
-    loadProgram("test1.txt");
-    printf("Loaded %d instructions\n", instructionCount);  // Should print 5
+    // THEN load
+    loadProgram("test4.txt");
+    printf("Loaded %d instructions\n", instructionCount);  
     int cycle = 1;
 
     while(

@@ -6,18 +6,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-//
-// ================= MEMORY SIZES =================
-//
 
+//mem sizes and register count
 #define INSTRUCTION_MEMORY_SIZE 1024
 #define DATA_MEMORY_SIZE 2048
 #define NUM_REGISTERS 64
 
-//
-// ================= OPCODES =================
-//
-
+//opcodes
 #define ADD   0
 #define SUB   1
 #define MUL   2
@@ -31,18 +26,11 @@
 #define LDR   10
 #define STR   11
 
-//
-// ================= PROCESSOR MEMORY =================
-//
-
 extern uint16_t instructionMemory[INSTRUCTION_MEMORY_SIZE];
 extern int8_t   dataMemory[DATA_MEMORY_SIZE];
 extern int8_t   registers[NUM_REGISTERS];
 
-//
-// ================= SPECIAL REGISTERS =================
-//
-
+//special registers
 extern uint16_t PC;
 
 typedef struct {
@@ -55,10 +43,7 @@ typedef struct {
 
 extern SREG_t SREG;
 
-//
-// ================= PIPELINE BUFFERS =================
-//
-
+//pipeline buffers
 typedef struct {
     uint16_t instruction;
     uint16_t pc;
@@ -81,10 +66,7 @@ typedef struct {
 
 extern ID_EX_Buffer ID_EX;
 
-//
-// ================= PIPELINE STATE =================
-//
-
+//pipeline state
 extern int      instructionCount;
 extern uint8_t  flushPipeline;
 extern uint16_t branchTarget;
@@ -93,10 +75,8 @@ extern uint8_t  forwardingEnabled;
 extern uint8_t  forwardedRegister;
 extern int8_t   forwardedValue;
 
-//
-// ================= FUNCTION DECLARATIONS =================
-//
 
+//func declarations
 void printRegisters();
 void printDataMemory();
 void printInstructionMemory();
@@ -108,7 +88,7 @@ void printSREG();
 void updateZeroFlag(int8_t result);
 void updateNegativeFlag(int8_t result);
 
-// Part 3: SREG arithmetic accuracy helpers
+//SREG arithmetic accuracy helpers
 void updateCarryFlag(int8_t val1, int8_t val2);
 void updateOverflowFlagADD(int8_t val1, int8_t val2, int8_t result);
 void updateOverflowFlagSUB(int8_t val1, int8_t val2, int8_t result);
